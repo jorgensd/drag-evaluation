@@ -1,0 +1,42 @@
+[build-system] # Require setuptool version due to https://github.com/pypa/setuptools/issues/2938
+requires = ["setuptools>=61.0.0", "wheel"]
+
+[project]
+name = "drag_evaluation"
+version = "0.1.0"
+description = "Drag evaluation for fluid flow in FEniCS"
+authors = [{name = "Ingeborg Gjerde", email = "ingeborg@simula.no"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies =["fenics-dolfin","meshio", "h5py",
+    "fenics_ii @ git+https://github.com/MiroK/fenics_ii.git",
+]
+
+
+
+[project.optional-dependencies]
+test = [
+]
+dev = [
+    "pdbpp",
+    "ipython",
+    "mypy",
+    "flake8",
+]
+all = [
+   "drag_evaluation[test]",
+   "drag_evaluation[dev]",
+]
+
+[tool.mypy]
+ignore_missing_imports = true
+# Folders to exclude
+exclude = [
+    "docs/",
+    "build/"
+]
+# Folder to check with mypy
+files = [
+    "src",
+    "tests"
+]

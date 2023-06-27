@@ -1,20 +1,17 @@
 from fenics import *
 set_log_level(20)
-from mshr import *
-import sys
-sys.path.append('../')
-from utils import mark_boundaries_cylinder
-from utils import *
+from pathlib import Path
+from drag_evaluation.mesh_generation import generate_cylinder_mesh
+from drag_evaluation.utils import *
+import time
 
-from solvers import *
+from drag_evaluation.solvers import *
 
     
 L1 = 12.8
 L2 = 128
 Width = 6.4*2
 
-
-diam = 2
 
 bc_dict = { 1: Constant((0,0)), 3: Constant((1,0)), 4: Constant((1,0))}
 
@@ -23,7 +20,7 @@ func_spaces = [P2P0, CR1P0]
 
 experiments = {}
 
-Ns = [256]
+Ns = [8]
 
 
 Rs = [1, 10, 50, 100]
@@ -31,9 +28,15 @@ Rs = [1, 10, 50, 100]
 meshes, ffs = [], []
 
 for N in Ns:
-    domain = Rectangle(Point(-L1, -Width/2), Point(L2, Width/2))-Circle(Point(0,0), 1, 8*N)
-    mesh = generate_mesh(domain, N)
-    ff = mark_boundaries_cylinder(mesh)
+    mesh_file = Path(f"mesh_{1./N:.3e}.xdmf")
+    mesh_file, facet_file = generate_cylinder_mesh(mesh_file, 12.8, 128, 12.8, 0, 0, 1, 1./N, {"walls":3, "inlet":3, "outlet":4, "obstacle":1})
+    mesh = Mesh()
+    with XDMFFile(str(mesh_file.absolute())) as xdmf:
+        xdmf.read(mesh)
+    mvc = MeshValueCollection("size_t", mesh, 1) 
+    with XDMFFile(str(facet_file.absolute())) as xdmf:
+        xdmf.read(mvc, "name_to_read")
+    ff = cpp.mesh.MeshFunctionSizet(mesh, mvc)
 
     meshes.append(mesh)
     ffs.append(ff)
@@ -61,7 +64,6 @@ for func_space in func_spaces:
             
             W = func_space(mesh)
             model = NavierStokes(W, nu=nu, ff=ff, bc_dict=bc_dict)
-            import time
             start = time.time()
             qp0 = model.solve(qp0)
             u0, p0, foo = qp0.split(deepcopy=True)

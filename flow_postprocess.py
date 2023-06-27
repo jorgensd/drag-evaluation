@@ -1,12 +1,8 @@
 from fenics import *
 set_log_level(30)
 from xii import *
-from mshr import *
-import sys
-sys.path.append('../')
-from utils import mark_boundaries_cylinder
-from utils import *
-from solvers import *
+from drag_evaluation.utils import *
+from drag_evaluation.solvers import *
 
     
 L1 = 12.8

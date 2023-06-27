@@ -1,8 +1,13 @@
-from solvers import D, Stokes
-from fenics import *
 import os
-import numpy as np
 
+import numpy as np
+from fenics import *
+
+from .solvers import D, Stokes
+
+__all__ = ["drag_beta", "drag_omega", "TaylorHood", "CR1P0", "P2P0", "ScottVogelius", "read_up",
+           "read_h5_mesh", "read_h5_mesh", "read_h5_func", "write_HDF5file", "mark_boundaries_cylinder", "mark_boundaries_expduct", "get_computed_nus_cylinder", "get_closest_computed_Rs_expduct"
+]
 
 def drag_beta(u, p, nu, XD=Constant((1, 0))):
     """Compute drag force on cylinder
@@ -119,7 +124,6 @@ def read_h5_mesh(mpi, loc, varname):
     meshf.read(mesh, varname, False)
     meshf.close()
     return mesh
-
 
 def read_h5_func(W, loc, varname):
     upf = HDF5File(W.mesh().mpi_comm(), loc, "r")
@@ -263,7 +267,7 @@ def get_computed_nus_cylinder(loc, params):
 
 def get_closest_computed_Rs_expduct(loc, R, params, larger=False):
     '''
-    Chech which values of R we've already computed the solution for on this particular
+    Check which values of R we've already computed the solution for on this particular
     domain and mesh
 
     Args:

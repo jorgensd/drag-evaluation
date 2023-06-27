@@ -3,6 +3,7 @@ from fenics import *
 '''
 Functions solving Navier-Stokes equations with/without slip
 '''
+__all__ = ["Stokes", "NO_SLIP", "NavierStokes"]
 
 NO_SLIP = 99
 
