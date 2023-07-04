@@ -7,7 +7,8 @@ import numpy as np
 
 __all__ = ["generate_cylinder_mesh", "create_mesh"]
 
-def create_mesh(mesh:meshio.Mesh, cell_type:str, prune_z:bool=False):
+
+def create_mesh(mesh: meshio.Mesh, cell_type: str, prune_z: bool = False):
     cells = mesh.get_cells_type(cell_type)
     cell_data = mesh.get_cell_data("gmsh:physical", cell_type)
     points = mesh.points[:, :2] if prune_z else mesh.points
@@ -18,6 +19,7 @@ def create_mesh(mesh:meshio.Mesh, cell_type:str, prune_z:bool=False):
     )
     return out_mesh
 
+
 def generate_cylinder_mesh(
     filename: Path,
     L1: float,
@@ -27,7 +29,7 @@ def generate_cylinder_mesh(
     c_y: float,
     r: float,
     res_min: float,
-    markers: Dict[str, int]
+    markers: Dict[str, int],
 ):
     """
     Generate a square mesh (-L1, L2)x(-width/2, width/2) with a circular whole or radius r
@@ -49,7 +51,9 @@ def generate_cylinder_mesh(
     mesh_comm = MPI.COMM_WORLD
     model_rank = 0
     if mesh_comm.rank == model_rank:
-        rectangle = gmsh.model.occ.addRectangle(-L1, -width/2, 0, L2+L1, width, tag=1)
+        rectangle = gmsh.model.occ.addRectangle(
+            -L1, -width / 2, 0, L2 + L1, width, tag=1
+        )
         obstacle = gmsh.model.occ.addDisk(c_x, c_y, 0, r, r)
         gmsh.model.occ.cut([(gdim, rectangle)], [(gdim, obstacle)])
         gmsh.model.occ.synchronize()
@@ -58,7 +62,7 @@ def generate_cylinder_mesh(
         gmsh.model.addPhysicalGroup(volumes[0][0], [volumes[0][1]], 1)
         gmsh.model.setPhysicalName(volumes[0][0], 1, "Fluid")
 
-    boundary_tags:Dict[int, List[int]]= {markers[key]:[] for key in markers.keys()}
+    boundary_tags: Dict[int, List[int]] = {markers[key]: [] for key in markers.keys()}
     if mesh_comm.rank == model_rank:
         boundaries = gmsh.model.getBoundary(volumes, oriented=False)
         for boundary in boundaries:
@@ -67,9 +71,9 @@ def generate_cylinder_mesh(
                 boundary_tags[markers["inlet"]].append(boundary[1])
             elif np.allclose(center_of_mass, [L2, 0, 0]):
                 boundary_tags[markers["outlet"]].append(boundary[1])
-            elif np.allclose(center_of_mass, [(L2+L1)/2-L1, -width/2, 0]) or np.allclose(
-                center_of_mass, [(L2+L1)/2-L1, width/2, 0]
-            ):
+            elif np.allclose(
+                center_of_mass, [(L2 + L1) / 2 - L1, -width / 2, 0]
+            ) or np.allclose(center_of_mass, [(L2 + L1) / 2 - L1, width / 2, 0]):
                 boundary_tags[markers["walls"]].append(boundary[1])
             else:
                 boundary_tags[markers["obstacle"]].append(boundary[1])
@@ -77,13 +81,15 @@ def generate_cylinder_mesh(
         for group, g_markers in boundary_tags.items():
             gmsh.model.addPhysicalGroup(1, g_markers, group)
         distance_field = gmsh.model.mesh.field.add("Distance")
-        gmsh.model.mesh.field.setNumbers(distance_field, "EdgesList", boundary_tags[markers["obstacle"]])
+        gmsh.model.mesh.field.setNumbers(
+            distance_field, "EdgesList", boundary_tags[markers["obstacle"]]
+        )
         threshold_field = gmsh.model.mesh.field.add("Threshold")
         gmsh.model.mesh.field.setNumber(threshold_field, "IField", distance_field)
         gmsh.model.mesh.field.setNumber(threshold_field, "LcMin", res_min)
-        gmsh.model.mesh.field.setNumber(threshold_field, "LcMax", 10*res_min)
+        gmsh.model.mesh.field.setNumber(threshold_field, "LcMax", 10 * res_min)
         gmsh.model.mesh.field.setNumber(threshold_field, "DistMin", r)
-        gmsh.model.mesh.field.setNumber(threshold_field, "DistMax", 3*r)
+        gmsh.model.mesh.field.setNumber(threshold_field, "DistMax", 3 * r)
         min_field = gmsh.model.mesh.field.add("Min")
         gmsh.model.mesh.field.setNumbers(min_field, "FieldsList", [threshold_field])
         gmsh.model.mesh.field.setAsBackgroundMesh(min_field)
@@ -99,13 +105,12 @@ def generate_cylinder_mesh(
     gmsh.finalize()
     mesh_comm.Barrier()
     filename = Path(filename)
-    facet_file_name = filename.with_stem(filename.stem+"_facets").with_suffix(".xdmf")
+    facet_file_name = filename.with_stem(filename.stem + "_facets").with_suffix(".xdmf")
     mesh_file_name = filename.with_suffix(".xdmf")
 
     if MPI.COMM_WORLD.rank == 0:
         in_mesh = meshio.read(str(tmp_file))
         tmp_file.unlink()
-
 
         line_mesh = create_mesh(in_mesh, "line", prune_z=True)
         meshio.write(facet_file_name, line_mesh)

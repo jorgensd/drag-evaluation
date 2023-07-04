@@ -15,8 +15,6 @@ dependencies =["fenics-dolfin","meshio", "h5py",
 
 
 [project.optional-dependencies]
-test = [
-]
 dev = [
     "pdbpp",
     "ipython",
@@ -24,7 +22,7 @@ dev = [
     "flake8",
 ]
 all = [
-   "drag_evaluation[test]",
+   "drag_evaluation",
    "drag_evaluation[dev]",
 ]
 

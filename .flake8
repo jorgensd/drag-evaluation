@@ -1,4 +1,6 @@
 # flake8 does not support pyproject.toml, see:
 # https://github.com/PyCQA/flake8/issues/234
 [flake8]
-max-line-length = 100
+max-line-length = 120
+exclude = .git, build
+ignore = F405, F403, W503, W605
